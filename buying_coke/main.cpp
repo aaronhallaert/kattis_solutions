@@ -3,11 +3,11 @@
 #include <algorithm>
 
 using namespace std;
-// current best solution
+// requested
+int cokes;
 int min_value = 99999;
 
 class Stage {
-    int requested;
     int value;
     int iteration;
     int n1;
@@ -16,8 +16,7 @@ class Stage {
 
     vector<Stage *> children;
 
-    Stage(int requested, int n1, int n5, int n10, int value, int iteration) {
-        this->requested= requested;
+    Stage(int n1, int n5, int n10, int value, int iteration) {
         this->n1 = n1;
         this->n5 = n5;
         this->n10 = n10;
@@ -29,7 +28,7 @@ class Stage {
         if (this->n10 == 0) {
             return nullptr;
         } else {
-            return new Stage(requested, n1 + 2, n5, n10 - 1, value + 1, iteration + 1);
+            return new Stage(n1 + 2, n5, n10 - 1, value + 1, iteration + 1);
         }
     }
 
@@ -37,7 +36,7 @@ class Stage {
         if (this->n5 < 2) {
             return nullptr;
         } else {
-            return new Stage(requested, n1 + 2, n5 - 2, n10, value + 2, iteration + 1);
+            return new Stage(n1 + 2, n5 - 2, n10, value + 2, iteration + 1);
         }
     }
 
@@ -45,7 +44,7 @@ class Stage {
         if (this->n1 < 3 || this->n5 < 1) {
             return nullptr;
         } else {
-            return new Stage(requested, n1 - 3, n5 - 1, n10, value + 4, iteration + 1);
+            return new Stage(n1 - 3, n5 - 1, n10, value + 4, iteration + 1);
         }
     }
 
@@ -53,19 +52,17 @@ class Stage {
         if (this->n1 < 8) {
             return nullptr;
         } else {
-            return new Stage(requested, n1 - 8, n5, n10, value + 8, iteration + 1);
+            return new Stage(n1 - 8, n5, n10, value + 8, iteration + 1);
         }
     }
 
-    bool operator<(const Stage &other) const{
+    bool operator<(const Stage &other) const {
         return value < other.value;
     }
 
 
-
 public:
-    Stage(int requested, int n1, int n5, int n10) {
-        this->requested = requested;
+    Stage(int n1, int n5, int n10) {
         this->n1 = n1;
         this->n5 = n5;
         this->n10 = n10;
@@ -75,18 +72,23 @@ public:
 
     ~Stage() {
         Stage *st;
-        for(auto & it : children) {
+        for (auto &it : children) {
             st = it;
             delete st;
         }
     }
 
-    void solve() {
-        if (iteration == requested && (min_value > this->value)) {
-            min_value = this->value;
-            return;
+    int solve() {
+        // If not possible to pay for rest of cokes needed return immediately
+        if (iteration > cokes) {
+            return 99999;
         }
-        else if(this->value < min_value){
+
+        if (iteration == cokes && (min_value > this->value)) {
+            min_value = this->value;
+            return this->value;
+        }
+        else if (min_value > this->value) {
             Stage *a = this->pay_10();
             if (a) {
                 children.push_back(a);
@@ -106,13 +108,20 @@ public:
             }
         }
 
-        if (children.empty()) {
-            return;
-        } else {
+        if(!children.empty()){
+            // sort in order to start with most promising child
             std::sort(children.begin(), children.end());
+
+            // find and return best solution
+            vector<int> sols;
             for (Stage *stage: children) {
-                stage->solve();
+                sols.push_back(stage->solve());
             }
+            sort(sols.begin(), sols.end());
+            return sols.front();
+        }
+        else{
+            return 99999;
         }
     }
 };
@@ -124,18 +133,18 @@ int main() {
     cin >> cases;
 
     for (int i = 0; i < cases; i++) {
-        int cokes;
+
         int n1;
         int n5;
         int n10;
         cin >> cokes >> n1 >> n5 >> n10;
-        auto* initial= new Stage(cokes, n1, n5, n10);
-        initial->solve();
-        cout<<min_value<<endl;
+        auto *initial = new Stage(n1, n5, n10);
+        int solution = initial->solve();
+        cout << solution << endl;
 
         // reset
         delete initial;
-        min_value= 9999;
+        min_value=99999;
     }
 
 }
