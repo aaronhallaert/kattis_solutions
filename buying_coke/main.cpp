@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <algorithm>
 
 using namespace std;
 // current best solution
@@ -13,7 +14,7 @@ class Stage {
     int n5;
     int n10;
 
-    vector<Stage> children;
+    vector<Stage *> children;
 
     Stage(int requested, int n1, int n5, int n10, int value, int iteration) {
         this->requested= requested;
@@ -56,6 +57,11 @@ class Stage {
         }
     }
 
+    bool operator<(const Stage &other) const{
+        return value < other.value;
+    }
+
+
 
 public:
     Stage(int requested, int n1, int n5, int n10) {
@@ -68,7 +74,13 @@ public:
     }
 
     ~Stage() {
+        Stage *st;
+        for(auto & it : children) {
+            st = it;
+            delete st;
+        }
     }
+
     void solve() {
         if (iteration == requested && (min_value > this->value)) {
             min_value = this->value;
@@ -77,28 +89,29 @@ public:
         else if(this->value < min_value){
             Stage *a = this->pay_10();
             if (a) {
-                children.push_back(*a);
+                children.push_back(a);
             }
             Stage *b = this->pay_2x5();
             if (b) {
-                children.push_back(*b);
+                children.push_back(b);
             }
             Stage *c = this->pay_5_3x1();
             if (c) {
-                children.push_back(*c);
+                children.push_back(c);
             }
 
             Stage *d = this->pay_8x1();
             if (d) {
-                children.push_back(*d);
+                children.push_back(d);
             }
         }
 
         if (children.empty()) {
             return;
         } else {
-            for (Stage &stage: children) {
-                stage.solve();
+            std::sort(children.begin(), children.end());
+            for (Stage *stage: children) {
+                stage->solve();
             }
         }
     }
