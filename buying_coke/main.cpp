@@ -4,74 +4,60 @@
 
 using namespace std;
 // requested
-int cokes;
-int min_value = 99999;
+int mem[151][101][51];
+int totalMoney;
 
-class Stage {
-    int value;
-    int iteration;
+class Problem {
+    int cokesToBuy;
     int n1;
     int n5;
     int n10;
 
-    vector<Stage *> children;
+    int currentBest;
+    vector<Problem *> children;
 
-    Stage(int n1, int n5, int n10, int value, int iteration) {
-        this->n1 = n1;
-        this->n5 = n5;
-        this->n10 = n10;
-        this->value = value;
-        this->iteration = iteration;
-    }
-
-    Stage *pay_10() {
+    Problem *pay_10() {
         if (this->n10 == 0) {
             return nullptr;
         } else {
-            return new Stage(n1 + 2, n5, n10 - 1, value + 1, iteration + 1);
+            return new Problem(n1 + 2, n5, n10 - 1, cokesToBuy - 1);
         }
     }
 
-    Stage *pay_2x5() {
+    Problem *pay_2x5() {
         if (this->n5 < 2) {
             return nullptr;
         } else {
-            return new Stage(n1 + 2, n5 - 2, n10, value + 2, iteration + 1);
+            return new Problem(n1 + 2, n5 - 2, n10, cokesToBuy - 1);
         }
     }
 
-    Stage *pay_5_3x1() {
+    Problem *pay_5_3x1() {
         if (this->n1 < 3 || this->n5 < 1) {
             return nullptr;
         } else {
-            return new Stage(n1 - 3, n5 - 1, n10, value + 4, iteration + 1);
+            return new Problem(n1 - 3, n5 - 1, n10, cokesToBuy - 1);
         }
     }
 
-    Stage *pay_8x1() {
+    Problem *pay_8x1() {
         if (this->n1 < 8) {
             return nullptr;
         } else {
-            return new Stage(n1 - 8, n5, n10, value + 8, iteration + 1);
+            return new Problem(n1 - 8, n5, n10, cokesToBuy - 1);
         }
     }
 
-    bool operator<(const Stage &other) const {
-        return value < other.value;
-    }
-
-
 public:
-    Stage(int n1, int n5, int n10) {
+    Problem(int n1, int n5, int n10, int cokesToBuy) {
         this->n1 = n1;
         this->n5 = n5;
         this->n10 = n10;
-        this->value = 0;
-        this->iteration = 0;
+        this->cokesToBuy = cokesToBuy;
     }
 
-    ~Stage() {
-        Stage *st;
+    ~Problem() {
+        Problem *st;
         for (auto &it : children) {
             st = it;
             delete st;
@@ -79,50 +65,63 @@ public:
     }
 
     int solve() {
-        // If not possible to pay for rest of cokes needed return immediately
-        if (iteration > cokes) {
+        // if not possible to pay, return max
+        if (cokesToBuy * 8 - n5 * 5 - n10 * 10 > n1) {
             return 99999;
         }
 
-        if (iteration == cokes && (min_value > this->value)) {
-            min_value = this->value;
-            return this->value;
-        }
-        else if (min_value > this->value) {
-            Stage *a = this->pay_10();
-            if (a) {
-                children.push_back(a);
-            }
-            Stage *b = this->pay_2x5();
-            if (b) {
-                children.push_back(b);
-            }
-            Stage *c = this->pay_5_3x1();
-            if (c) {
-                children.push_back(c);
-            }
-
-            Stage *d = this->pay_8x1();
-            if (d) {
-                children.push_back(d);
-            }
+        // return if we already have a solution for this problem and we can pay
+        int memValue = mem[cokesToBuy][n5][n10];
+        if (memValue != 0) {
+            return memValue;
         }
 
-        if(!children.empty()){
-            // sort in order to start with most promising child
-            std::sort(children.begin(), children.end());
-
-            // find and return best solution
-            vector<int> sols;
-            for (Stage *stage: children) {
-                sols.push_back(stage->solve());
+        // if we only have to buy one drink, the problem is deterministic
+        if (cokesToBuy == 1) {
+            if (n10 >= 1) {
+                mem[cokesToBuy][n5][n10] = 1;
+                return 1;
+            } else if (n5 >= 2) {
+                mem[cokesToBuy][n5][n10] = 2;
+                return 2;
+            } else if (n5 >= 1 && n1 >= 3) {
+                mem[cokesToBuy][n5][n10] = 4;
+                return 4;
+            } else if (n1 >= 8) {
+                mem[cokesToBuy][n5][n10] = 8;
+                return 8;
+            } else {
+                // not possible to pay
+                mem[cokesToBuy][n5][n10] = 99999;
+                return 99999;
             }
-            sort(sols.begin(), sols.end());
-            return sols.front();
         }
-        else{
-            return 99999;
+
+        // if we need more than one drink, we have multiple possible paths to walk
+        vector<int> solutions;
+        // 4 possible ways to continue
+        Problem *a = this->pay_10();
+        Problem *b = this->pay_2x5();
+        Problem *c = this->pay_5_3x1();
+        Problem *d = this->pay_8x1();
+
+        if (a) {
+            solutions.push_back(a->solve()+1);
         }
+        if (b) {
+            solutions.push_back(b->solve()+2);
+        }
+        if (c) {
+            solutions.push_back(c->solve()+4);
+        }
+        if (d) {
+            solutions.push_back(d->solve()+8);
+        }
+
+        sort(solutions.begin(), solutions.end());
+        mem[cokesToBuy][n5][n10] = solutions.front();
+        return solutions.front();
+
     }
 };
 
@@ -134,17 +133,25 @@ int main() {
 
     for (int i = 0; i < cases; i++) {
 
+        for (auto &x : mem) {
+            for (auto &y : x) {
+                fill_n(y, 51, 0);
+            }
+        }
+
+        int cokes;
         int n1;
         int n5;
         int n10;
+
         cin >> cokes >> n1 >> n5 >> n10;
-        auto *initial = new Stage(n1, n5, n10);
+        auto *initial = new Problem(n1, n5, n10, cokes);
+        totalMoney = n1 + n5 * 5 + n10 * 10;
         int solution = initial->solve();
         cout << solution << endl;
 
         // reset
         delete initial;
-        min_value=99999;
     }
 
 }
