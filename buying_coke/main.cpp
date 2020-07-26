@@ -25,7 +25,7 @@ class Stage {
     }
 
     Stage *pay_10() {
-        if (n10 == 0) {
+        if (this->n10 == 0) {
             return nullptr;
         } else {
             return new Stage(requested, n1 + 2, n5, n10 - 1, value + 1, iteration + 1);
@@ -33,7 +33,7 @@ class Stage {
     }
 
     Stage *pay_2x5() {
-        if (n5 < 2) {
+        if (this->n5 < 2) {
             return nullptr;
         } else {
             return new Stage(requested, n1 + 2, n5 - 2, n10, value + 2, iteration + 1);
@@ -41,7 +41,7 @@ class Stage {
     }
 
     Stage *pay_5_3x1() {
-        if (n1 < 3 && n5 < 1) {
+        if (this->n1 < 3 || this->n5 < 1) {
             return nullptr;
         } else {
             return new Stage(requested, n1 - 3, n5 - 1, n10, value + 4, iteration + 1);
@@ -49,7 +49,7 @@ class Stage {
     }
 
     Stage *pay_8x1() {
-        if (n1 < 8) {
+        if (this->n1 < 8) {
             return nullptr;
         } else {
             return new Stage(requested, n1 - 8, n5, n10, value + 8, iteration + 1);
@@ -73,7 +73,8 @@ public:
         if (iteration == requested && (min_value > this->value)) {
             min_value = this->value;
             return;
-        } else if(this->value <= min_value){
+        }
+        else if(this->value < min_value){
             Stage *a = this->pay_10();
             if (a) {
                 children.push_back(*a);
@@ -105,7 +106,6 @@ public:
 
 int main() {
 
-    std::cout << "Hello, World!" << std::endl;
     // create initial stage with input values
     int cases;
     cin >> cases;
@@ -118,7 +118,7 @@ int main() {
         cin >> cokes >> n1 >> n5 >> n10;
         auto* initial= new Stage(cokes, n1, n5, n10);
         initial->solve();
-        cout<<min_value <<endl;
+        cout<<min_value<<endl;
 
         // reset
         delete initial;
