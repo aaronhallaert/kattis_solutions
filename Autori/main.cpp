@@ -4,7 +4,6 @@ using namespace std;
 int main() {
     // input
     string name;
-    cout << "Enter input line:" << endl;
     cin >> name;
 
     // parse name
