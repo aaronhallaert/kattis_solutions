@@ -5,16 +5,12 @@
 using namespace std;
 // requested
 int mem[151][101][51];
-int totalMoney;
 
 class Problem {
     int cokesToBuy;
     int n1;
     int n5;
     int n10;
-
-    int currentBest;
-    vector<Problem *> children;
 
     Problem *pay_10() {
         if (this->n10 == 0) {
@@ -48,6 +44,14 @@ class Problem {
         }
     }
 
+    Problem *pay_10_3x1(){
+        if (this->n10 < 1 || this->n1<3) {
+            return nullptr;
+        } else {
+            return new Problem(n1 - 3, n5+1, n10-1, cokesToBuy - 1);
+        }
+    }
+
 public:
     Problem(int n1, int n5, int n10, int cokesToBuy) {
         this->n1 = n1;
@@ -56,17 +60,11 @@ public:
         this->cokesToBuy = cokesToBuy;
     }
 
-    ~Problem() {
-        Problem *st;
-        for (auto &it : children) {
-            st = it;
-            delete st;
-        }
-    }
+    ~Problem() = default;
 
     int solve() {
         // if not possible to pay, return max
-        if (cokesToBuy * 8 - n5 * 5 - n10 * 10 > n1) {
+        if (cokesToBuy * 8 - n5 * 5 - n10 * 10 - n1 > 0) {
             return 99999;
         }
 
@@ -76,25 +74,9 @@ public:
             return memValue;
         }
 
-        // if we only have to buy one drink, the problem is deterministic
-        if (cokesToBuy == 1) {
-            if (n10 >= 1) {
-                mem[cokesToBuy][n5][n10] = 1;
-                return 1;
-            } else if (n5 >= 2) {
-                mem[cokesToBuy][n5][n10] = 2;
-                return 2;
-            } else if (n5 >= 1 && n1 >= 3) {
-                mem[cokesToBuy][n5][n10] = 4;
-                return 4;
-            } else if (n1 >= 8) {
-                mem[cokesToBuy][n5][n10] = 8;
-                return 8;
-            } else {
-                // not possible to pay
-                mem[cokesToBuy][n5][n10] = 99999;
-                return 99999;
-            }
+        // if we only have no drinks to buy, return
+        if (cokesToBuy==0){
+            return 0;
         }
 
         // if we need more than one drink, we have multiple possible paths to walk
@@ -104,24 +86,32 @@ public:
         Problem *b = this->pay_2x5();
         Problem *c = this->pay_5_3x1();
         Problem *d = this->pay_8x1();
-
+        Problem *e = this->pay_10_3x1();
         if (a) {
             solutions.push_back(a->solve()+1);
+            delete a;
         }
         if (b) {
             solutions.push_back(b->solve()+2);
+            delete b;
         }
         if (c) {
             solutions.push_back(c->solve()+4);
+            delete c;
         }
         if (d) {
             solutions.push_back(d->solve()+8);
+            delete d;
+        }
+        if(e){
+            solutions.push_back(e->solve()+4);
+            delete e;
         }
 
+        // take best one (least cost)
         sort(solutions.begin(), solutions.end());
         mem[cokesToBuy][n5][n10] = solutions.front();
         return solutions.front();
-
     }
 };
 
@@ -132,13 +122,11 @@ int main() {
     cin >> cases;
 
     for (int i = 0; i < cases; i++) {
-
-        for (auto &x : mem) {
-            for (auto &y : x) {
-                fill_n(y, 51, 0);
+        for(auto &x: mem){
+            for(auto&y:x){
+                fill_n(y, 51,0);
             }
         }
-
         int cokes;
         int n1;
         int n5;
@@ -146,7 +134,6 @@ int main() {
 
         cin >> cokes >> n1 >> n5 >> n10;
         auto *initial = new Problem(n1, n5, n10, cokes);
-        totalMoney = n1 + n5 * 5 + n10 * 10;
         int solution = initial->solve();
         cout << solution << endl;
 
